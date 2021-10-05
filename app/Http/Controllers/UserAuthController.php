@@ -37,7 +37,7 @@ class UserAuthController extends Controller
         ];
  
         if (Auth::attempt($credentials)) {
-            $token = Auth::user()->createToken('TutsForWeb')->accessToken;
+            $token = Auth::user()->createToken('passportToken')->accessToken;
             return response()->json(['token' => $token]);
         } else {
             return response()->json(['error' => 'UnAuthorised'], 401);

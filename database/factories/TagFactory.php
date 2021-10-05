@@ -22,7 +22,7 @@ class TagFactory extends Factory
     public function definition()
     {
         return [
-            //
+            'tag' => $this->faker->sentence(1,true)
         ];
     }
 }
