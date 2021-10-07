@@ -30,6 +30,15 @@ class PostTest extends TestCase
         unset($this->posts);
     }
 
+    // authenticate the user 
+    public function getAuthenticatedToken(){
+        Artisan::call('passport:install');
+        Passport::actingAs(
+            $this->user
+        );
+        return $this->user->createToken('passportToken')->accessToken;
+    }
+
     public function test_can_get_all_posts()
     {
         $response = $this->getJson(route('posts.index'));
@@ -44,17 +53,9 @@ class PostTest extends TestCase
 
         $this->assertEquals($this->posts->first()->title, $response->json()['title']);
     }
-    public function getAuthenticatedToken(){
-        Artisan::call('passport:install');
-        Passport::actingAs(
-            $this->user
-        );
-        return $this->user->createToken('passportToken')->accessToken;
-    }
 
     public function test_authenticated_user_can_create_a_post(){
         
-
         $headers = [ 
             'Accept' => 'application/json',
             'Authorization' => 'Bearer '.$this->getAuthenticatedToken(),
@@ -70,7 +71,27 @@ class PostTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_authenticated_user_can_update_a_post(){
+        $headers = [ 
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer '.$this->getAuthenticatedToken(),
+        ];
+
+        // Grab a post, in this case the first one 
+        $post = $this->posts->first();
+
+        // Update its title
+        $post->title = 'Updated Post';
+
+        // When the user hit's the endpoint to update the post
+        $response = $this->putJson(route('posts.update',$post->id),$post->toArray(),$headers);
+
+        // The post should have 'Updated Post' as a title 
+        $this->assertEquals('Updated Post', $response->json()['title']);
+    }
+    
     public function test_should_throw_exception_model_not_found(){
+        // Because in setUp there are 5 posts created, the one with id 6 shouldnt exist 
         $response = $this->getJson(route('posts.show', 6));
         $response->assertStatus(404);
     }
