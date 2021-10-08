@@ -5,8 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\{Post, User};
-use Laravel\Passport\Passport;
-use Illuminate\Support\Facades\Artisan;
+
 
 class PostTest extends TestCase
 {
@@ -30,15 +29,6 @@ class PostTest extends TestCase
         unset($this->posts);
     }
 
-    // authenticate the user 
-    public function getAuthenticatedToken(){
-        Artisan::call('passport:install');
-        Passport::actingAs(
-            $this->user
-        );
-        return $this->user->createToken('passportToken')->accessToken;
-    }
-
     public function test_can_get_all_posts()
     {
         $response = $this->getJson(route('posts.index'));
@@ -56,26 +46,17 @@ class PostTest extends TestCase
 
     public function test_authenticated_user_can_create_a_post(){
         
-        $headers = [ 
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer '.$this->getAuthenticatedToken(),
-        ];
-    
         $response = $this->json('POST', route('posts.store'), [
             'title' => 'new post created via test',
             'excerpt' => 'post excerpt',
             'body' => 'post body',
             'user_id' => $this->user->id,
-        ], $headers);
+        ], $this->getHeaders($this->user));
     
         $response->assertStatus(200);
     }
 
     public function test_authenticated_user_can_update_a_post(){
-        $headers = [ 
-            'Accept' => 'application/json',
-            'Authorization' => 'Bearer '.$this->getAuthenticatedToken(),
-        ];
 
         // Grab a post, in this case the first one 
         $post = $this->posts->first();
@@ -84,10 +65,22 @@ class PostTest extends TestCase
         $post->title = 'Updated Post';
 
         // When the user hit's the endpoint to update the post
-        $response = $this->putJson(route('posts.update',$post->id),$post->toArray(),$headers);
+        $response = $this->putJson(route('posts.update',$post->id),$post->toArray(),$this->getHeaders($this->user));
 
         // The post should have 'Updated Post' as a title 
         $this->assertEquals('Updated Post', $response->json()['title']);
+    }
+
+    public function test_unauthenticated_user_can_not_update_a_post(){
+
+        $post = $this->posts->first();
+
+        $post->title = 'Updated Post';
+
+        $response = $this->putJson(route('posts.update',$post->id),$post->toArray());
+
+        // It should return unauthorized, because no headers where sent
+        $response->assertStatus(401)->assertSee(["message" => "Unauthenticated."]);
     }
     
     public function test_should_throw_exception_model_not_found(){

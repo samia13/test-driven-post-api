@@ -35,9 +35,10 @@ class UserAuthController extends Controller
             'email' => $request->email,
             'password' => $request->password
         ];
- 
-        if (Auth::attempt($credentials)) {
-            $token = Auth::user()->createToken('passportToken')->accessToken;
+        
+        // api guard has no attempt method, wich lead us to use web guard 
+        if (Auth::guard('web')->attempt($credentials)) {
+            $token = Auth::guard('web')->user()->createToken('passportToken')->accessToken;
             return response()->json(['token' => $token]);
         } else {
             return response()->json(['error' => 'UnAuthorised'], 401);

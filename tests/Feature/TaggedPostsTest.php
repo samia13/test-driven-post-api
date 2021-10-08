@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Tests\TestCase;
 use App\Models\{Tag, User, Post};
@@ -31,6 +30,14 @@ class TaggedPostsTest extends TestCase
         });
     }
 
+    public function tearDown():void
+    {
+        parent::tearDown();
+        unset($this->user);
+        unset($this->tags);
+        unset($this->taggedPosts);
+    }
+
     public function test_can_get_all_posts_with_associated_tags()
     {
         $response = $this->getJson(route('posts.index'));
@@ -51,7 +58,7 @@ class TaggedPostsTest extends TestCase
         // When the user Hit the endpoint to update $post
         $response = $this->putJson(route('posts.update',$post->id),['tags' => $tags]);
 
-        // It should have one tag associated
+        // It should have one tag associated instead of 3
         $this->assertEquals(1, count($response->json()['tags']));
     }
 
